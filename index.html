@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send USDT — Trust Wallet 2.0</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app" id="appWrap">
+
+  <!-- ══════════════════════════════════════════════
+       SEND FORM (shown first)
+  ═══════════════════════════════════════════════ -->
+  <div id="sendForm" style="padding-bottom: 16px;">
+
+    <!-- QR Scanned Banner -->
+    <div class="qr-banner">
+      <div class="qr-banner-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="3"  y="3"  width="7" height="7" rx="1.5" stroke="#36C98E" stroke-width="1.8"/>
+          <rect x="14" y="3"  width="7" height="7" rx="1.5" stroke="#36C98E" stroke-width="1.8"/>
+          <rect x="3"  y="14" width="7" height="7" rx="1.5" stroke="#36C98E" stroke-width="1.8"/>
+          <rect x="15" y="15" width="2" height="2" fill="#36C98E"/>
+          <rect x="19" y="15" width="2" height="2" fill="#36C98E"/>
+          <rect x="15" y="19" width="2" height="2" fill="#36C98E"/>
+          <rect x="19" y="19" width="2" height="2" fill="#36C98E"/>
+        </svg>
+      </div>
+      <div>
+        <div class="qr-banner-title">QR Code Scanned Successfully</div>
+        <div class="qr-banner-sub">Recipient address pre-filled from QR</div>
+      </div>
+    </div>
+
+    <!-- Token: USDT (locked) -->
+    <div class="token-locked">
+      <div class="tl-icon">₮</div>
+      <div>
+        <div class="tl-name">Tether USD</div>
+        <div class="tl-sub">TRC-20 · TRON Network</div>
+      </div>
+      <div class="tl-badge">USDT</div>
+    </div>
+
+    <!-- Recipient Address -->
+    <div class="fcard" id="addrCard">
+      <label class="flabel">Recipient Address</label>
+      <div class="addr-row">
+        <textarea
+          class="addr-input"
+          id="toAddr"
+          rows="2"
+          spellcheck="false"
+          placeholder="Paste or scan a wallet address"
+          oninput="validateForm()"
+        ></textarea>
+      </div>
+      <!-- Address validity indicator -->
+      <div id="addrStatus" style="margin-top:8px;font-size:.73rem;font-weight:600;color:var(--green);display:flex;align-items:center;gap:5px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="rgba(54,201,142,.2)"/>
+          <path d="M7 12l3 3 7-7" stroke="#36C98E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Valid TRON address
+      </div>
+    </div>
+
+    <!-- Amount -->
+    <div class="fcard" id="amtCard">
+      <label class="flabel">Amount to Send</label>
+      <div class="amount-main">
+        <input
+          class="amount-input"
+          id="amtInput"
+          type="number"
+          min="0"
+          step="any"
+          placeholder="0.00"
+          oninput="onAmountChange()"
+        />
+        <div class="usdt-tag">
+          <span style="font-size:.85rem">₮</span>
+          <span class="usdt-sym">USDT</span>
+        </div>
+      </div>
+      <div class="amount-foot">
+        <span class="amt-usd" id="amtUSD">≈ $0.00</span>
+        <span class="amt-avail">Balance: 2,500 USDT</span>
+      </div>
+      <!-- Preset quick-fills -->
+      <div class="presets">
+        <button class="preset" onclick="setPreset(this,100)">$100</button>
+        <button class="preset" onclick="setPreset(this,250)">$250</button>
+        <button class="preset" onclick="setPreset(this,500)">$500</button>
+        <button class="preset" onclick="setPreset(this,2500)" id="maxPreset">MAX</button>
+      </div>
+    </div>
+
+    <!-- Network Fee -->
+    <div class="fee-strip">
+      <div class="fee-l">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M3 11l19-9-9 19-2-8-8-2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Network fee
+      </div>
+      <div class="fee-r">
+        <div class="fee-val">~$0.14 · 1 TRX</div>
+        <div class="fee-speed" onclick="showToast('TRON fees are near-zero ⚡','info')">⚡ Instant · TRON Network</div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-wrap">
+      <button id="reviewBtn" class="cta" onclick="openConfirm()">
+        Review Transaction
+      </button>
+    </div>
+
+  </div><!-- /sendForm -->
+
+  <!-- ══════════════════════════════════════════════
+       SUCCESS SCREEN (shown after confirm)
+  ═══════════════════════════════════════════════ -->
+  <div class="success-screen" id="successScreen">
+
+    <div class="s-ring">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+        <path d="M5 13l4 4L19 7" stroke="#36C98E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="s-title">Transaction Sent!</div>
+    <div class="s-sub" id="sTxt">Your USDT has been broadcast to the TRON network and will arrive shortly.</div>
+
+    <!-- TX Hash -->
+    <div class="tx-box">
+      <div class="tx-box-lbl">Transaction Hash</div>
+      <div class="tx-hash-val" id="txHash">Generating…</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="s-details">
+      <div class="sd">
+        <span class="sd-l">Amount Sent</span>
+        <span class="sd-r green" id="sSentAmt">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">USD Value</span>
+        <span class="sd-r" id="sSentUSD">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">To</span>
+        <span class="sd-r" id="sToAddr" style="font-family:monospace;font-size:.76rem;color:var(--text-sub)">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Network</span>
+        <span class="sd-r">TRON Mainnet</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Fee Paid</span>
+        <span class="sd-r">~$0.14 (1 TRX)</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Status</span>
+        <span class="sd-r green">✓ Confirmed</span>
+      </div>
+    </div>
+
+    <div style="width:100%;padding-top:4px">
+      <button class="cta cta-primary" onclick="resetForm()" style="margin-bottom:10px">
+        Done
+      </button>
+      <button class="cta cta-secondary" onclick="resetForm()" style="padding:14px">
+        Send Another
+      </button>
+    </div>
+
+  </div><!-- /successScreen -->
+
+  <!-- ══════════════════════════════════════════════
+       FAILED SCREEN (shown for 1 or 10 USDT)
+  ═══════════════════════════════════════════════ -->
+  <div class="success-screen" id="failedScreen">
+
+    <div class="s-ring" style="background:rgba(255,92,92,.12);border-color:rgba(255,92,92,.25)">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+        <path d="M6 6l12 12M18 6L6 18" stroke="#FF5C5C" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="s-title" style="color:#FF5C5C">Transaction Failed</div>
+    <div class="s-sub" id="fTxt">Your transaction could not be processed. The network rejected this transfer.</div>
+
+    <!-- Error Box -->
+    <div class="tx-box" style="border-color:rgba(255,92,92,.25);background:rgba(255,92,92,.07)">
+      <div class="tx-box-lbl" style="color:#FF5C5C">Error Reason</div>
+      <div class="tx-hash-val" id="fErrCode" style="color:#FF5C5C;font-size:.76rem">ERR_INSUFFICIENT_BANDWIDTH · Node rejected tx</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="s-details">
+      <div class="sd">
+        <span class="sd-l">Amount Attempted</span>
+        <span class="sd-r" id="fSentAmt" style="color:#FF5C5C">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">USD Value</span>
+        <span class="sd-r" id="fSentUSD">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">To</span>
+        <span class="sd-r" id="fToAddr" style="font-family:monospace;font-size:.76rem;color:var(--text-sub)">—</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Network</span>
+        <span class="sd-r">TRON Mainnet</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Fee Charged</span>
+        <span class="sd-r">$0.00 (refunded)</span>
+      </div>
+      <div class="sd">
+        <span class="sd-l">Status</span>
+        <span class="sd-r" style="color:#FF5C5C">✗ Failed</span>
+      </div>
+    </div>
+
+    <div style="width:100%;padding-top:4px">
+      <button class="cta cta-primary" onclick="retryFromFailed()" style="margin-bottom:10px;background:linear-gradient(135deg,#FF5C5C,#c0392b)">
+        Try Again
+      </button>
+      <button class="cta cta-secondary" onclick="resetForm()" style="padding:14px">
+        Back to Form
+      </button>
+    </div>
+
+  </div><!-- /failedScreen -->
+
+</div><!-- /app -->
+
+<!-- ══════ CONFIRM BOTTOM SHEET ══════ -->
+<div class="overlay" id="overlay" onclick="closeIfOutside(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Confirm Transaction</div>
+
+    <div class="ci">
+      <span class="ci-l">Token</span>
+      <span class="ci-r" style="display:flex;align-items:center;gap:7px">
+        <span style="width:22px;height:22px;border-radius:50%;background:rgba(38,161,123,.18);color:#26A17B;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem">₮</span>
+        Tether USD (USDT)
+      </span>
+    </div>
+    <div class="ci">
+      <span class="ci-l">From</span>
+      <span class="ci-r" style="color:var(--blue-light)">My Wallet · Main</span>
+    </div>
+    <div class="ci">
+      <span class="ci-l">To</span>
+      <span class="ci-r mono" id="cTo">—</span>
+    </div>
+    <div class="ci">
+      <span class="ci-l">Network</span>
+      <span class="ci-r">TRON Mainnet</span>
+    </div>
+    <div class="ci" style="border-top:1px solid var(--border-med);margin-top:4px;padding-top:16px">
+      <span class="ci-l" style="font-weight:700;color:var(--text)">Amount</span>
+      <span class="ci-r green big" id="cAmt">—</span>
+    </div>
+    <div class="ci">
+      <span class="ci-l">USD Value</span>
+      <span class="ci-r" id="cUSD">—</span>
+    </div>
+    <div class="ci">
+      <span class="ci-l">Network Fee</span>
+      <span class="ci-r">~$0.14 (1 TRX)</span>
+    </div>
+    <div class="ci" style="border-top:1px solid var(--border-med);margin-top:4px;padding-top:16px">
+      <span class="ci-l" style="font-weight:700;color:var(--text)">Total Cost</span>
+      <span class="ci-r" id="cTotal" style="font-weight:700">—</span>
+    </div>
+
+    <div class="sheet-btns">
+      <button class="cta cta-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="cta cta-primary"   onclick="confirmSend()" id="confirmBtn">Confirm & Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SPINNER OVERLAY ══════ -->
+<div class="spinner-overlay" id="spinner">
+  <div class="spinner"></div>
+  <div class="spinner-txt">Broadcasting transaction…</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Constants ───────────────────────────────────────────────────
+  const USDT_RATE = 1.00; // 1 USDT = $1.00
+  const MAX_BAL   = 2500;
+
+  // ── Toast ───────────────────────────────────────────────────────
+  let _tt;
+  function showToast(msg, type = 'info') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    clearTimeout(_tt);
+    _tt = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // ── Address helpers ─────────────────────────────────────────────
+  function validateAddr(addr) {
+    // TRON addresses: start with T, 34 base58 chars
+    return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr.trim());
+  }
+
+  function updateAddrStatus() {
+    const addr   = document.getElementById('toAddr').value.trim();
+    const status = document.getElementById('addrStatus');
+    if (!addr) {
+      status.style.display = 'none';
+      return;
+    }
+    if (validateAddr(addr)) {
+      status.style.display = 'flex';
+      status.style.color   = 'var(--green)';
+      status.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="rgba(54,201,142,.2)"/>
+          <path d="M7 12l3 3 7-7" stroke="#36C98E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Valid TRON address`;
+    } else {
+      status.style.display = 'flex';
+      status.style.color   = 'var(--red)';
+      status.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="rgba(255,92,92,.2)"/>
+          <path d="M15 9l-6 6M9 9l6 6" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Invalid address — check and retry`;
+    }
+  }
+
+  async function pasteAddr() {
+    try {
+      const txt = await navigator.clipboard.readText();
+      document.getElementById('toAddr').value = txt;
+    } catch {
+      document.getElementById('toAddr').value = 'TXVHwQiiyVxAjX6ofr4CjH9Y3QCAHvvkZ2';
+    }
+    updateAddrStatus();
+    validateForm();
+  }
+
+  function clearAddr() {
+    document.getElementById('toAddr').value = '';
+    document.getElementById('addrStatus').style.display = 'none';
+    validateForm();
+  }
+
+  // ── Amount helpers ──────────────────────────────────────────────
+  function onAmountChange() {
+    const raw = parseFloat(document.getElementById('amtInput').value) || 0;
+    document.getElementById('amtUSD').textContent = `≈ $${(raw * USDT_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Update preset highlights
+    document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+    validateForm();
+  }
+
+  function setPreset(btn, amount) {
+    document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('amtInput').value = amount;
+    onAmountChange();
+    validateForm();
+  }
+
+  // ── Form validation ─────────────────────────────────────────────
+  function validateForm() {
+    updateAddrStatus();
+    const addr    = document.getElementById('toAddr').value.trim();
+    const amount  = parseFloat(document.getElementById('amtInput').value) || 0;
+    const addrOK  = validateAddr(addr);
+    const amtOK   = amount > 0 && amount <= MAX_BAL;
+    // button always enabled per design
+  }
+
+  // ── Read URL params from scanned QR ───────────────────────────
+  (function initFromQR() {
+    const p      = new URLSearchParams(window.location.search);
+    const toAddr = p.get('to');
+    const amount = p.get('amount');
+
+    if (toAddr) {
+      document.getElementById('toAddr').value = toAddr;
+      // Update banner to confirm QR scan origin
+      document.querySelector('.qr-banner-sub').textContent =
+        'Recipient address pre-filled from QR scan';
+    } else {
+      // No QR param — use default address
+      document.getElementById('toAddr').value = 'TXVHwQiiyVxAjX6ofr4CjH9Y3QCAHvvkZ2';
+    }
+
+    if (amount && !isNaN(parseFloat(amount))) {
+      document.getElementById('amtInput').value = parseFloat(amount);
+      onAmountChange();
+    }
+
+    validateForm();
+  })();
+
+  // ── Confirm sheet ───────────────────────────────────────────────
+  function openConfirm() {
+    const addr   = document.getElementById('toAddr').value.trim();
+    const amount = parseFloat(document.getElementById('amtInput').value);
+    const usd    = amount * USDT_RATE;
+    const total  = usd + 0.14;
+
+    document.getElementById('cTo').textContent    = addr.slice(0,10) + '…' + addr.slice(-8);
+    document.getElementById('cAmt').textContent   = amount.toLocaleString('en-US') + ' USDT';
+    document.getElementById('cUSD').textContent   = '$' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('cTotal').textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    document.getElementById('overlay').classList.add('open');
+  }
+
+  function closeConfirm() {
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  function closeIfOutside(e) {
+    if (e.target === document.getElementById('overlay')) closeConfirm();
+  }
+
+  // ── Confirm & Send ──────────────────────────────────────────────
+  function confirmSend() {
+    const addr   = document.getElementById('toAddr').value.trim();
+    const amount = parseFloat(document.getElementById('amtInput').value);
+    const usd    = amount * USDT_RATE;
+
+    closeConfirm();
+
+    // Show spinner
+    document.getElementById('spinner').classList.add('show');
+
+    setTimeout(() => {
+      document.getElementById('spinner').classList.remove('show');
+      // 1 USDT and 10 USDT always fail; everything else succeeds
+      if (amount === 1 || amount === 10) {
+        showFailed(addr, amount, usd);
+      } else {
+        showSuccess(addr, amount, usd);
+      }
+    }, 2000);
+  }
+
+  // ── Show success screen ─────────────────────────────────────────
+  function showSuccess(addr, amount, usd) {
+    // Populate fields
+    document.getElementById('sSentAmt').textContent = amount.toLocaleString('en-US') + ' USDT';
+    document.getElementById('sSentUSD').textContent = '$' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('sToAddr').textContent  = addr.slice(0,12) + '…' + addr.slice(-8);
+    document.getElementById('sTxt').textContent =
+      `${amount.toLocaleString('en-US')} USDT sent to ${addr.slice(0,8)}…${addr.slice(-4)}. The transaction has been broadcast to the TRON network.`;
+
+    // Generate fake TRON TX hash (64 hex chars, no 0x prefix)
+    const hash = Array.from({length:64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    document.getElementById('txHash').textContent = hash;
+
+    // Swap views
+    document.getElementById('sendForm').style.display    = 'none';
+    document.getElementById('successScreen').classList.add('show');
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Show failed screen ────────────────────────────────────────────
+  function showFailed(addr, amount, usd) {
+    document.getElementById('fSentAmt').textContent = amount.toLocaleString('en-US') + ' USDT';
+    document.getElementById('fSentUSD').textContent = '$' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('fToAddr').textContent  = addr.slice(0,12) + '…' + addr.slice(-8);
+    document.getElementById('fTxt').textContent =
+      `Failed to send ${amount.toLocaleString('en-US')} USDT to ${addr.slice(0,8)}…${addr.slice(-4)}. Please check your bandwidth and try again.`;
+
+    const errors = [
+      'ERR_INSUFFICIENT_BANDWIDTH · Node rejected tx',
+      'ERR_CONTRACT_VALIDATE_ERROR · Signature mismatch',
+      'ERR_TIMEOUT · Network congestion, please retry',
+      'ERR_INVALID_ACCOUNT · Account resource limit exceeded'
+    ];
+    document.getElementById('fErrCode').textContent = errors[Math.floor(Math.random() * errors.length)];
+
+    document.getElementById('sendForm').style.display    = 'none';
+    document.getElementById('failedScreen').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Retry from failed screen ─────────────────────────────────────
+  function retryFromFailed() {
+    document.getElementById('failedScreen').classList.remove('show');
+    document.getElementById('sendForm').style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Reset ───────────────────────────────────────────────────────
+  function resetForm() {
+    document.getElementById('successScreen').classList.remove('show');
+    document.getElementById('sendForm').style.display = '';
+    document.getElementById('toAddr').value   = '';
+    document.getElementById('amtInput').value = '';
+    document.getElementById('amtUSD').textContent = '≈ $0.00';
+    document.getElementById('addrStatus').style.display = 'none';
+    document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+    validateForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

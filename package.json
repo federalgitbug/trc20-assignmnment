@@ -1,0 +1,13 @@
+{
+  "name": "ctf-usdt-verify-2026",
+  "version": "1.0.0",
+  "description": "USDT TRC20 verification prototype",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^4.5.14"
+  }
+}
